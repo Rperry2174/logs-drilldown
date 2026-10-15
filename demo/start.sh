@@ -21,6 +21,10 @@ if [ "${1:-}" = "--build" ] || [ ! -f "$REPO/dist/module.js" ]; then
   (cd "$REPO" && pnpm install --frozen-lockfile --ignore-scripts && pnpm run build)
 fi
 R="$DEMO_HOME/run"; D="$DEMO_HOME/data"
+wait_ready() {  # name url logfile — fail loudly rather than reporting a stack that never came up
+  for _ in $(seq 90); do curl -sf "$2" >/dev/null 2>&1 && return 0; sleep 1; done
+  echo "$1 never became ready; last lines of $3:" >&2; tail -20 "$3" >&2; return 1
+}
 cat > "$R/loki.yaml" <<Y
 auth_enabled: false
 server: {http_listen_port: $LOKI_PORT, grpc_listen_port: 9196}
@@ -47,9 +51,9 @@ ln -sfn "$REPO/dist" "$R/plugins/grafana-lokiexplore-app"
 seeded=0
 if ! curl -sf "http://127.0.0.1:$LOKI_PORT/ready" >/dev/null 2>&1; then
   nohup "$DEMO_HOME/bin/loki" -config.file="$R/loki.yaml" > "$DEMO_HOME/logs/loki.log" 2>&1 < /dev/null & echo $! > "$R/loki.pid"
-  for _ in $(seq 90); do curl -sf "http://127.0.0.1:$LOKI_PORT/ready" >/dev/null 2>&1 && break; sleep 1; done
+  wait_ready Loki "http://127.0.0.1:$LOKI_PORT/ready" "$DEMO_HOME/logs/loki.log"
 fi
-LOKI_PORT=$LOKI_PORT python3 "$REPO/demo/seed.py" || echo "seed failed (see above)"
+LOKI_PORT=$LOKI_PORT python3 "$REPO/demo/seed.py"
 if ! curl -sf "http://127.0.0.1:$GRAFANA_PORT/api/health" >/dev/null 2>&1; then
   G="$DEMO_HOME/bin/grafana-$GF_VER"
   GF_PATHS_DATA="$D/grafana" GF_PATHS_LOGS="$DEMO_HOME/logs" GF_PATHS_PLUGINS="$R/plugins" GF_PATHS_PROVISIONING="$R/prov" \
@@ -57,7 +61,7 @@ if ! curl -sf "http://127.0.0.1:$GRAFANA_PORT/api/health" >/dev/null 2>&1; then
   GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=grafana-lokiexplore-app GF_PLUGINS_PREINSTALL_DISABLED=true \
   GF_ANALYTICS_REPORTING_ENABLED=false GF_ANALYTICS_CHECK_FOR_UPDATES=false GF_NEWS_NEWS_FEED_ENABLED=false \
   nohup "$G/bin/grafana" server --homepath "$G" > "$DEMO_HOME/logs/grafana.stdout" 2>&1 < /dev/null & echo $! > "$R/grafana.pid"
-  for _ in $(seq 90); do curl -sf "http://127.0.0.1:$GRAFANA_PORT/api/health" >/dev/null 2>&1 && break; sleep 1; done
+  wait_ready Grafana "http://127.0.0.1:$GRAFANA_PORT/api/health" "$DEMO_HOME/logs/grafana.stdout"
 fi
 echo "up: Grafana :$GRAFANA_PORT, Loki :$LOKI_PORT"
 echo "Open: http://127.0.0.1:$GRAFANA_PORT/a/grafana-lokiexplore-app/explore?var-ds=loki&from=now-1h&to=now"
