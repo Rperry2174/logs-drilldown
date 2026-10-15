@@ -95,7 +95,6 @@ depgen
 dgrijalva
 dgryski
 difflib
-dimgray
 diskv
 dnaeon
 docopt

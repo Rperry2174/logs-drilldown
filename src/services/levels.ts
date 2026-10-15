@@ -92,8 +92,7 @@ export function normalizeLevelName(level: string) {
 // resolve per theme.
 export const LEVEL_COLORS = {
   critical: 'semi-dark-purple',
-  // dimgray fails WCAG AA contrast (~3.2:1) on dark backgrounds, so use a lighter gray in dark theme
-  debug: config.theme2.isDark ? '#9e9e9e' : 'dimgray',
+  debug: 'semi-dark-blue',
   error: 'semi-dark-red',
   info: 'semi-dark-blue',
   trace: colors[2],
