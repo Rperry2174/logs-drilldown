@@ -1,5 +1,5 @@
 {
-  // Cloud Agent env for the #1996 (Loki 3.5.5 + Grafana 12.3.0) repro. No Docker needed.
+  // Cloud Agent env for the #1996 (Loki 3.5.5 + Grafana 13.2.4) repro. No Docker needed.
   "install": "bash .cursor/install.sh",
   "start": "bash .cursor/start.sh",
   "terminals": [

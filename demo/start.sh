@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Local repro stack for grafana/logs-drilldown#1996 (info and debug share a color), no Docker.
-#   Loki 3.5.5 :3110 + Grafana Enterprise 12.3.0 :3310 with ./dist mounted + demo/seed.py.
+#   Loki 3.5.5 :3110 + Grafana Enterprise 13.2.4 :3310 with ./dist mounted + demo/seed.py.
 #   demo/start.sh [--build]     demo/stop.sh [--wipe]
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 DEMO_HOME="${DEMO_HOME:-$HOME/.cache/logs-drilldown-demo}"
-GF_VER=12.3.0; LOKI_VER=3.5.5; GRAFANA_PORT=3310; LOKI_PORT=3110
+GF_VER="${GF_VER:-13.2.4}"; LOKI_VER=3.5.5; GRAFANA_PORT=3310; LOKI_PORT=3110
 mkdir -p "$DEMO_HOME"/{bin,run/plugins,run/prov/datasources,run/prov/plugins,logs,data}
 os=$(uname -s | tr '[:upper:]' '[:lower:]'); arch=$(uname -m)
 case "$arch" in x86_64|amd64) arch=amd64 ;; arm64|aarch64) arch=arm64 ;; esac
