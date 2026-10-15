@@ -22,7 +22,13 @@ if [ "${1:-}" = "--build" ] || [ ! -f "$REPO/dist/module.js" ]; then
 fi
 R="$DEMO_HOME/run"; D="$DEMO_HOME/data"
 wait_ready() {  # name url logfile — fail loudly rather than reporting a stack that never came up
-  for _ in $(seq 90); do curl -sf "$2" >/dev/null 2>&1 && return 0; sleep 1; done
+  # Deadline, not an iteration count: a port that accepts but never answers makes each
+  # probe cost its full --max-time, which would stretch a 90s budget into minutes.
+  local deadline=$((SECONDS + 90))
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    curl -sf --max-time 5 "$2" >/dev/null 2>&1 && return 0
+    sleep 1
+  done
   echo "$1 never became ready; last lines of $3:" >&2; tail -20 "$3" >&2; return 1
 }
 cat > "$R/loki.yaml" <<Y
@@ -49,12 +55,12 @@ Y
 printf 'apiVersion: 1\napps:\n  - { type: grafana-lokiexplore-app, disabled: false }\n' > "$R/prov/plugins/app.yaml"
 ln -sfn "$REPO/dist" "$R/plugins/grafana-lokiexplore-app"
 seeded=0
-if ! curl -sf "http://127.0.0.1:$LOKI_PORT/ready" >/dev/null 2>&1; then
+if ! curl -sf --max-time 5 "http://127.0.0.1:$LOKI_PORT/ready" >/dev/null 2>&1; then
   nohup "$DEMO_HOME/bin/loki" -config.file="$R/loki.yaml" > "$DEMO_HOME/logs/loki.log" 2>&1 < /dev/null & echo $! > "$R/loki.pid"
   wait_ready Loki "http://127.0.0.1:$LOKI_PORT/ready" "$DEMO_HOME/logs/loki.log"
 fi
 LOKI_PORT=$LOKI_PORT python3 "$REPO/demo/seed.py"
-if ! curl -sf "http://127.0.0.1:$GRAFANA_PORT/api/health" >/dev/null 2>&1; then
+if ! curl -sf --max-time 5 "http://127.0.0.1:$GRAFANA_PORT/api/health" >/dev/null 2>&1; then
   G="$DEMO_HOME/bin/grafana-$GF_VER"
   GF_PATHS_DATA="$D/grafana" GF_PATHS_LOGS="$DEMO_HOME/logs" GF_PATHS_PLUGINS="$R/plugins" GF_PATHS_PROVISIONING="$R/prov" \
   GF_SERVER_HTTP_PORT=$GRAFANA_PORT GF_SERVER_HTTP_ADDR=127.0.0.1 GF_AUTH_ANONYMOUS_ENABLED=true GF_AUTH_ANONYMOUS_ORG_ROLE=Admin GF_AUTH_DISABLE_LOGIN_FORM=true \
