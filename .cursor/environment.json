@@ -1,0 +1,9 @@
+{
+  // Cloud Agent env for the #1996 (Loki 3.5.5 + Grafana 12.3.0) repro. No Docker needed.
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
+  "terminals": [
+    { "name": "stack logs", "command": "tail -F $HOME/.cache/logs-drilldown-demo/logs/grafana.stdout $HOME/.cache/logs-drilldown-demo/logs/loki.log", "description": "Grafana :3310 + Loki :3110; check: demo/repro-check.sh" }
+  ],
+  "ports": [ { "port": 3310, "name": "Grafana" }, { "port": 3110, "name": "Loki" } ]
+}
