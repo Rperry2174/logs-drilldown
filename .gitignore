@@ -61,3 +61,5 @@ generator/generator
 
 # AI workflow artifacts (Claude Code / superpowers)
 docs/superpowers/
+
+demo/*.png
